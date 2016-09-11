@@ -1,5 +1,8 @@
 #!/usr/bin/env python2
 
+# whether to include a link to this github project or not
+ref_self = True
+
 mymodstr = 'macropolo' # todo later taken from the sys.argv
 
 import inspect, importlib, types, textwrap, StringIO
@@ -110,14 +113,32 @@ for key, value in functionParts.iteritems():
 
 classes = {}
 
+def findExampleRemoveNo(line):
+    counter = 0
+    for i in range(len(line)):
+        if (line[i].isspace()):
+            counter += 1
+        else:
+            break
+
+    return counter
+
 def formatDoc(doc):
     finalS = ''
     s = StringIO.StringIO(doc)
     curMode = 'search'
     curPart = None
+    lineStartRemoveNo = 0
+    firstExampleLine = False
 
     for line in s:
-        line = line.strip()
+        if firstExampleLine:
+            lineStartRemoveNo = findExampleRemoveNo(line)
+            firstExampleLine = False
+        if curMode != 'exa':
+            line = line.strip()
+        else:
+            line = line.rstrip()[lineStartRemoveNo:]
         if line == '' and curMode not in ['exa', 'des']:
             continue
         if line in functionParts:
@@ -129,6 +150,11 @@ def formatDoc(doc):
             finalS += curPart['title']
             finalS += curPart['start_string']
             curMode = curPart['mode']
+            if curMode != 'exa':
+                lineStartRemoveNo = 0
+                firstExampleLine = False
+            else:
+                firstExampleLine = True
         else:
             if (curPart == None):
                 finalS += line
@@ -231,3 +257,5 @@ for className in classes:
             print formatDoc(textwrap.dedent(doc))
             print
 
+if ref_self:
+    print 'This documentation was automatically formated for github by [pydoc2gitmd](https://github.com/hytromo/pydoc2gitmd)'
