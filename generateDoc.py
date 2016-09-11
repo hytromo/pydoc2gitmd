@@ -212,9 +212,10 @@ for classTuple in inspect.getmembers(mymod, predicate = inspect.isclass):
                 elif isinstance(curClass.__dict__[method.__name__], classmethod):
                     methodType = 'class'
 
-                classFunctions[methodType][method.__name__] = {}
-                classFunctions[methodType][method.__name__]['doc'] = method.__doc__
-                classFunctions[methodType][method.__name__]['args'] = inspect.getargspec(method).args
+                classFunctions[methodType][method.__name__] = {
+                    'doc': method.__doc__,
+                    'args': inspect.getargspec(method).args
+                }
 
         classes[curClass.__name__] = classFunctions
 
