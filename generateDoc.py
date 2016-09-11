@@ -4,6 +4,9 @@ mymodstr = 'macropolo' # todo later taken from the sys.argv
 
 import inspect, importlib, types, textwrap, StringIO
 
+# keep a list for each function's github link so as to be able to reference it in the description of other functions
+githubLinks = {}
+
 def alphanumeric(line, pos):
     string = ''
     for i in range(pos, len(line)):
@@ -23,7 +26,7 @@ def resolveRefs(line):
 
         reference = alphanumeric(line, pos + len('@ref:'))
 
-        line = line.replace('@ref:' + reference, '[' + reference + '](#' + reference + ')')
+        line = line.replace('@ref:' + reference, '[' + reference + '](#' + githubLinks[reference] + ')')
 
     return line
 
@@ -141,6 +144,21 @@ def formatDoc(doc):
 
     return finalS
 
+def methodString(method, args):
+    args = [arg for arg in args if arg not in ['self', 'cls']]
+    mString = method + ' ('
+    mString += ', '.join(args)
+    mString += ')'
+
+    return mString
+
+def githubLink(method, details):
+    args = details['args']
+
+    link = method.lower() + '-' + '-'.join([arg.lower() for arg in args if arg not in ['self', 'cls']])
+
+    return link
+
 for classTuple in inspect.getmembers(mymod, predicate = inspect.isclass):
     curClass = classTuple[1]
     if curClass.__module__ == mymodstr:
@@ -168,7 +186,9 @@ for classTuple in inspect.getmembers(mymod, predicate = inspect.isclass):
                 elif isinstance(curClass.__dict__[method.__name__], classmethod):
                     methodType = 'class'
 
-                classFunctions[methodType][method.__name__] = method.__doc__
+                classFunctions[methodType][method.__name__] = {}
+                classFunctions[methodType][method.__name__]['doc'] = method.__doc__
+                classFunctions[methodType][method.__name__]['args'] = inspect.getargspec(method).args
 
         classes[curClass.__name__] = classFunctions
 
@@ -187,8 +207,9 @@ for className in classes:
 
         print '- [' + methodType.title() + ' methods](#' + methodType + '-methods)'
         print
-        for method, doc in sorted(curClass[methodType].items()):
-            print '    - [' + method + '](#' + method + ')'
+        for method, details in sorted(curClass[methodType].items()):
+            githubLinks[method] = githubLink(method, details)
+            print '    - [' + method + '](#' + githubLinks[method] + ')'
 
         print
 
@@ -200,10 +221,12 @@ for className in classes:
         print '## ' + methodType.title() + ' methods'
         print
 
-        for method, doc in sorted(curClass[methodType].items()):
+        for method, details in sorted(curClass[methodType].items()):
+            doc = details['doc']
+            args = details['args']
             print '---'
             print
-            print '### `' + method + '`'
+            print '### `' + methodString(method, args) + '`'
             print
             print formatDoc(textwrap.dedent(doc))
             print
